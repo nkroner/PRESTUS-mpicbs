@@ -96,6 +96,15 @@ function segmentation_run(data_path, subject_id, filename_t1, filename_t2, param
         fid = fopen([temp_slurm_file '.sh'], 'w+');
         fprintf(fid, '#!/bin/bash\n');
         fprintf(fid, '#SBATCH --job-name=%s\n', job_name);
+        % Optional partition / core count (e.g. MPI-CBS requires an explicit
+        % partition and benefits from multiple cores for charm). Emitted only
+        % when set, so Donders behaviour (default partition, 1 core) is unchanged.
+        if isfield(parameters, 'hpc') && isfield(parameters.hpc, 'partition') && ~isempty(strtrim(char(parameters.hpc.partition)))
+            fprintf(fid, '#SBATCH --partition=%s\n', strtrim(char(parameters.hpc.partition)));
+        end
+        if isfield(parameters, 'hpc') && isfield(parameters.hpc, 'cores') && ~isempty(parameters.hpc.cores)
+            fprintf(fid, '#SBATCH -c %i\n', parameters.hpc.cores);
+        end
         fprintf(fid, '#SBATCH --nodes=1\n');
         fprintf(fid, '#SBATCH --ntasks=1\n');
         fprintf(fid, '#SBATCH --mem=20G\n');

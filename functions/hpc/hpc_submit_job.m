@@ -67,15 +67,28 @@ function write_slurm_script(temp_slurm_path, parameters, temp_m_file, log_dir)
     
     % Partition & GPU detection
     needs_gpu = (isfield(parameters.simulation, 'code_type') && any(strcmp(parameters.simulation.code_type, {'matlab_gpu', 'cpp_gpu'})));
-    
+    is_mpicbs = isfield(parameters.hpc, 'name') && strcmp(parameters.hpc.name, 'mpicbs');
+
     if isfield(parameters.hpc, 'partition') && ~isempty(strtrim(char(parameters.hpc.partition)))
         fprintf(fid, '#SBATCH --partition=%s\n', strtrim(char(parameters.hpc.partition)));
-    elseif needs_gpu
+    elseif needs_gpu && ~is_mpicbs
+        % MPI-CBS has no dedicated 'gpu' partition: GPUs live on the normal
+        % short/standard/long nodes, so require hpc.partition to be set instead.
         fprintf(fid, '#SBATCH --partition=gpu\n');
     end
 
     if strcmp(parameters.hpc.name, 'snellius')
 		fprintf(fid, '#SBATCH --gpus=%i\n', parameters.hpc.n_gpu);
+    elseif is_mpicbs
+        % MPI-CBS allocates GPUs with --gpus (not --gres=gpu:N). hpc.gpu may
+        % hold a value like '1' or 'ampere:1'; default to a single GPU.
+        if needs_gpu
+            if isfield(parameters.hpc, 'gpu') && ~isempty(strtrim(char(parameters.hpc.gpu)))
+                fprintf(fid, '#SBATCH --gpus %s\n', strtrim(char(parameters.hpc.gpu)));
+            else
+                fprintf(fid, '#SBATCH --gpus 1\n');
+            end
+        end
     elseif isfield(parameters.hpc, 'gpu') && ~isempty(strtrim(char(parameters.hpc.gpu)))
         fprintf(fid, '#SBATCH --gres=%s\n', strtrim(char(parameters.hpc.gpu)));
     elseif needs_gpu
@@ -88,6 +101,8 @@ function write_slurm_script(temp_slurm_path, parameters, temp_m_file, log_dir)
 
 	if strcmp(parameters.hpc.name, 'snellius')
         fprintf(fid, '#SBATCH --cpus-per-task=%i\n', parameters.hpc.cores);
+    elseif is_mpicbs && isfield(parameters.hpc, 'cores') && ~isempty(parameters.hpc.cores)
+        fprintf(fid, '#SBATCH -c %i\n', parameters.hpc.cores);
     end
 
     fprintf(fid, '#SBATCH --mem=%iG\n', parameters.hpc.memorylimit);
@@ -111,13 +126,25 @@ function write_slurm_script(temp_slurm_path, parameters, temp_m_file, log_dir)
     end
     
     if needs_gpu, fprintf(fid, 'nvidia-smi\n'); end
-	if strcmp(parameters.hpc.name, 'snellius')
+	if is_mpicbs
+        % MPI-CBS has no module system; scientific software is enabled via
+        % UPPERCASE environment wrappers. R2023b = MATLAB internal version 9.15.
+        % Compiled GPU code (cpp_gpu) also needs the CUDA runtime; plain
+        % matlab_gpu must NOT prepend CUDA (MATLAB ships its own, which an
+        % external CUDA env can shadow with a mismatched version).
+        if isfield(parameters.simulation, 'code_type') && strcmp(parameters.simulation.code_type, 'cpp_gpu')
+            fprintf(fid, 'CUDA MATLAB --version 9.15 matlab -batch "%s"\n', temp_m_file);
+        else
+            fprintf(fid, 'MATLAB --version 9.15 matlab -batch "%s"\n', temp_m_file);
+        end
+    elseif strcmp(parameters.hpc.name, 'snellius')
         fprintf(fid, 'module load 2024\n');
         fprintf(fid, 'module load MATLAB/2024b\n');
+        fprintf(fid, 'matlab -batch "%s"\n', temp_m_file);
     else
 		fprintf(fid, 'module load matlab/R2023b\n');
+        fprintf(fid, 'matlab -batch "%s"\n', temp_m_file);
 	end
-    fprintf(fid, 'matlab -batch "%s"\n', temp_m_file);
     fclose(fid);
 end
 

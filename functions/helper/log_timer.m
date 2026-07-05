@@ -65,6 +65,17 @@ switch action
             SAMPLER_TIMERS.remove(label);
         end
         
+        if ~TIMER_STATES.isKey(label)
+            % Re-entrant timer: the same label was started nested (e.g.
+            % prestus_pipeline re-invoked for the free-field baseline), and the
+            % inner 'stop' already removed the shared entry. Nothing left to
+            % report for the outer stop — return gracefully rather than erroring
+            % out at the very end of an otherwise-successful pipeline.
+            if nargout > 0
+                varargout{1} = struct('elapsed_s', NaN, 'peak_ram_gb', NaN, 'free_disk_gb', NaN);
+            end
+            return
+        end
         state = TIMER_STATES(label);
         time_sec = toc(state.start_time);
         end_ram = log_process_memory();

@@ -21,12 +21,13 @@ function [SKULL_BALLON] = skull_rubber_wrap(parameters, BW, medium_masks, segmen
 
     disp('Using rubber wrap to fill potential local holes in skull layer...')
 
-    % ==============================================================================
-    % Nifti info (to save new niftis)
-    % ==============================================================================
-    
-    % Load the T1w input image as a reference
-    info = niftiinfo(fullfile(parameters.path.seg, parameters.path.t1_pattern));
+    % NOTE: removed a dead `info = niftiinfo(fullfile(path.seg, path.t1_pattern))`
+    % call that used to sit here. `info` was never referenced anywhere in this
+    % function, and the path was malformed — path.seg (the segmentation dir)
+    % joined to the *unformatted* pattern 'sub-%1$03d_T1w.nii*' (no sprintf of
+    % subject_id) — so it crashed the whole pipeline whenever skull hole-filling
+    % ran with path.anat != path.seg. See preproc_head.m:43/50 for the correct
+    % T1 idioms if a reference header is ever actually needed here.
 
     % ==============================================================================
     % CLEAN SKULL MASK

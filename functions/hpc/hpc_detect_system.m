@@ -23,6 +23,15 @@ if sbatch_out == 0
 elseif qsub_out == 0
     hpc_type = 'qsub';
 else
-    error('No HPC system detected (sbatch/qsub)');
+    % MPI-CBS: interactive/compute nodes lack the Slurm client locally, but a
+    % submission host is reachable via `getserver -b`. Fall back to checking
+    % there (only runs when no local scheduler is found, so it's a no-op on
+    % clusters like Donders where sbatch is local).
+    [ssh_out, ~] = system('ssh -o BatchMode=yes "$(getserver -b)" which sbatch >/dev/null 2>&1');
+    if ssh_out == 0
+        hpc_type = 'slurm';
+    else
+        error('No HPC system detected (sbatch/qsub)');
+    end
 end
 end

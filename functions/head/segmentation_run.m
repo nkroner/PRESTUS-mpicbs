@@ -129,8 +129,14 @@ function segmentation_run(data_path, subject_id, filename_t1, filename_t2, param
         % Ensure script is executable
         system(sprintf('chmod +x %s', [temp_slurm_file,'.sh']));
 
-        % Create the full command to submit the batch script
-        sbatch_call = sprintf('sbatch --export=MANPATH %s.sh', temp_slurm_file);
+        % Create the full command to submit the batch script.
+        % MPI-CBS: nodes running MATLAB have no Slurm client — submit through a
+        % submission host (getserver -b). Elsewhere, submit locally.
+        if isfield(parameters, 'hpc') && isfield(parameters.hpc, 'name') && strcmp(parameters.hpc.name, 'mpicbs')
+            sbatch_call = sprintf('ssh -o BatchMode=yes "$(getserver -b)" ''sbatch %s.sh''', temp_slurm_file);
+        else
+            sbatch_call = sprintf('sbatch --export=MANPATH %s.sh', temp_slurm_file);
+        end
 
         % 4) Submit segmentation job
         fprintf('Running segmentation with a command \n%s\n', sbatch_call);

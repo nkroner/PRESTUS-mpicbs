@@ -43,7 +43,7 @@ switch hpc_type
 	    end
         
         write_slurm_script(temp_slurm_path, parameters, temp_m_file, log_dir);
-        job_id = submit_slurm_job(temp_slurm_path, log_dir);
+        job_id = submit_slurm_job(temp_slurm_path, log_dir, parameters);
 
     case 'qsub'
         temp_qsub_path = fullfile(log_dir, sprintf('temp_qsub_%s.sh', datestr(now, 'yyyymmdd_HHMMSS')));
@@ -128,7 +128,11 @@ function write_slurm_script(temp_slurm_path, parameters, temp_m_file, log_dir)
     if needs_gpu, fprintf(fid, 'nvidia-smi\n'); end
 	if is_mpicbs
         % MPI-CBS has no module system; scientific software is enabled via
-        % UPPERCASE environment wrappers. R2023b = MATLAB internal version 9.15.
+        % UPPERCASE environment wrappers. Source the login profile first so those
+        % wrappers (MATLAB, CUDA) are on PATH — a job submitted via ssh inherits
+        % only the minimal submission-shell environment.
+        fprintf(fid, 'source /etc/profile 2>/dev/null || true\n');
+        % R2023b = MATLAB internal version 9.15.
         % Compiled GPU code (cpp_gpu) also needs the CUDA runtime; plain
         % matlab_gpu must NOT prepend CUDA (MATLAB ships its own, which an
         % external CUDA env can shadow with a mismatched version).
@@ -171,10 +175,16 @@ function [parameters] = extract_snellius_parameters(parameters)
         parameters.hpc.timelimit)
 end
 
-function job_id = submit_slurm_job(temp_slurm_path, log_dir)
-    sbatch_call = sprintf('sbatch %s', temp_slurm_path);
-    full_cmd = sprintf('cd %s; %s', log_dir, sbatch_call);
-    
+function job_id = submit_slurm_job(temp_slurm_path, log_dir, parameters)
+    % MPI-CBS: nodes running MATLAB (interactive/compute) have no Slurm client,
+    % so submit through a submission host (getserver -b prints one). The batch
+    % script uses absolute paths + #SBATCH --chdir, so a local cd is unnecessary.
+    if isfield(parameters, 'hpc') && isfield(parameters.hpc, 'name') && strcmp(parameters.hpc.name, 'mpicbs')
+        full_cmd = sprintf('ssh -o BatchMode=yes "$(getserver -b)" ''sbatch %s''', temp_slurm_path);
+    else
+        full_cmd = sprintf('cd %s; sbatch %s', log_dir, temp_slurm_path);
+    end
+
     fprintf('SLURM command: %s\n', full_cmd);
     [status, out] = system(full_cmd);
     if status ~= 0, error('SLURM submission failed: %s', out); end

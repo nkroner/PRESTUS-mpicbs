@@ -38,6 +38,18 @@ cluster's own CUDA 12.5. **`nvcc` 12.5 and `gcc-12` are on the GPU nodes**, so n
   `libhdf5.so.320` + `libcufft.so.11` + `libcudart.so.12`. So it's self-contained; no env setup
   needed when PRESTUS runs it. **Requirement: the `kwave_build` conda env must persist.**
 
+## Prebuilt binary in this repo (convenience copy)
+`binaries/kspaceFirstOrder-CUDA` here is a **prebuilt** copy (skip the compile). **Deploy it:**
+```bash
+cp examples/mpicbs_cpp_gpu_build/binaries/kspaceFirstOrder-CUDA external/k-wave/k-Wave/binaries/
+chmod +x external/k-wave/k-Wave/binaries/kspaceFirstOrder-CUDA
+```
+**Caveat — not portable.** It has an absolute **rpath** to `/data/u_kroner_software/miniforge/envs/kwave_build/lib`
+(HDF5) and `/usr/local/cuda-12.5/lib64`, and SASS for `sm_75`+`sm_86` only. It works **only on
+this MPI-CBS system** with the `kwave_build` env present. On a different machine, or if that env
+moves, **rebuild** instead. The OMP (`cpp_cpu`) binary is not stored here (46 MB) — build it via
+this recipe if needed.
+
 ## Using it
 Set `parameters.simulation.code_type = 'cpp_gpu'`. Everything else identical to `matlab_gpu`.
 **Always NaN-check outputs** the first time on any new GPU/driver/CUDA combo (compiled-CUDA

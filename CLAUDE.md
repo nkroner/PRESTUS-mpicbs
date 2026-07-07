@@ -20,9 +20,16 @@ is **ahead**. So:
   are byte-identical to live anyway).
 - **Advanced or newest features → check the live site** — local `doc/` lacks them entirely:
   group HTML report, multi-transducer / sequential-thermal / limited-acoustic-FOV, defacing
-  (`pydeface`), the newer `grid.*_fov_*` / `thermal_*` / `deface` parameters, and the
-  **expanded Localite neuronav** handling (`InstrumentMarker`, zero-origin RAS / planning-image
-  affine vs the m2m header — directly relevant to our Localite work).
+  (`pydeface`), the newer `grid.*_fov_*` / `thermal_*` / `deface` parameters.
+- **Localite neuronav is a docs-lag, NOT a code-lag (verified 2026-07).** The handling —
+  `InstrumentMarker` markertype, `tracker_to_bowl_mm` offset calibration, zero-origin
+  planning-image affine (`canonical_affine_transform`/`ras_to_grid`) — is **already implemented
+  in our checkout and usable now**. What lags is only our local `doc/doc_placement_neuronav.md`
+  (no `InstrumentMarker`/`EntryTarget` sections; missing the blunt "don't reproject Localite
+  coords with the SimNIBS **m2m** T1 header → shifts tens of mm; use the **planning** T1 header"
+  warning). `doc_coordinate_systems.md` *does* cover the zero-origin/m2m content. So: the feature
+  works here — just **read the live `doc_placement_neuronav` page for guidance** when doing real
+  Localite placement.
 - Because the site tracks `development`, its **code** is likely ahead of this branch too: if a
   live-doc claim doesn't match local PRESTUS behaviour, that branch gap is why — trust local
   code's behaviour, and integrate `development` deliberately later (not mid-setup).

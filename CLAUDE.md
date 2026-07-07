@@ -97,9 +97,17 @@ the `gpuArray` acoustic backend is available.
   tested against. Don't bump it independently of PRESTUS.
 - **Start with the MATLAB `gpuArray` backend.** It uses MATLAB's own CUDA runtime and
   **sidesteps the institute CUDA-binary problem entirely** — fastest route to a working pipeline.
-- The compiled **`cpp_gpu`** backend is exactly where the institute GPU gotcha bites (see the
-  global file's "GPUs & CUDA": CUDA 12.5 vs older, silent all-NaN, GCC ≤ 12, or an IT ticket for
-  an older CUDA). Only go there for performance, and validate outputs aren't NaN before trusting.
+- The compiled **`cpp_gpu`** backend is **built and validated** (2026-07): we recompiled
+  `kspaceFirstOrder-CUDA` against the cluster's own **CUDA 12.5 + gcc-12** — **no IT ticket
+  needed** (the stock CUDA-11 precompiled binaries won't load). It runs **~4× faster** than
+  `matlab_gpu` with numerically identical results (validated finite/no-NaN on Turing/CUDA 12.5).
+  Recipe + prebuilt binary: `PRESTUS_config/BUILDING_CPP_GPU.md` and
+  `examples/mpicbs_cpp_gpu_build/`. Deploy = copy the binary into `external/k-wave/k-Wave/binaries/`
+  (that's `getkWavePath('binaries')`, NOT `external/k-wave/binaries/`); runtime needs the
+  `kwave_build` conda env to persist (binary rpath). **Still NaN-check** on any new
+  GPU/driver/CUDA combo — the silent-all-NaN gotcha (global file "GPUs & CUDA") is exactly why
+  it's built against 12.5 rather than run from a stock older-CUDA binary. Rebuild it whenever the
+  k-Wave submodule version changes.
 
 ## Related tools sharing SimNIBS
 

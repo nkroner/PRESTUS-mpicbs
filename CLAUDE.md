@@ -32,6 +32,11 @@ is MPI-CBS, not that** — adapt everything to the global file's constraints (10
 conda-forge-only, the UPPERCASE system, `getserver`/Slurm, conda envs under
 `/data/u_kroner_software/miniforge/envs`).
 
+**MPI-CBS how-tos (ours, not upstream):** run a subject end-to-end →
+`examples/mpicbs_run_templates/RUNNING.md` (+ copy-edit-submit templates); build/deploy the
+`cpp_gpu` binary → `examples/mpicbs_cpp_gpu_build/README.md`; update the install →
+`PRESTUS_config/UPDATING.md`. Start from `RUNNING.md` when actually running work here.
+
 `doc/` entry points: setup — `doc_installation.md`, `doc_getting-started.md`, `doc_gui.md`;
 reference — `doc_parameters.md`, `doc_modules.md`, `doc_backend.md`, `doc_hpc.md`,
 `doc_coordinate_systems.md`, `doc_functions.md`; transducer — `doc_transducer.md`,

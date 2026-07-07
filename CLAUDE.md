@@ -132,3 +132,10 @@ default). Load with
 `load_parameters('config_prestus_mpicbs.yaml', '/data/u_kroner_software/git/PRESTUS_config')`.
 See also Claude Code's own project memory (`/memory`). This file holds the durable decisions;
 live paths live with the config.
+
+**Git branch — do not lose our patches.** This install runs on branch
+**`feature/mpicbs-hpc-adapt`**, not `main`. Essential local changes live ONLY here: the MPI-CBS
+Slurm dispatch (`hpc.name='mpicbs'` ssh-submit), two bug fixes (`log_timer`, `skull_rubber_wrap`),
+and the `examples/mpicbs_*` how-tos + `CLAUDE.md`. A plain `git checkout main` silently reverts
+all of it and breaks the pipeline. To update PRESTUS, follow `PRESTUS_config/UPDATING.md` (fetch
+`main`, then **rebase this branch onto it**) — never just switch to `main`.

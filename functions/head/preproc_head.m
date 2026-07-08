@@ -605,6 +605,7 @@ function [medium_masks, segmentation_crop, bone_mask_crop, pseudoCT_crop, trans_
         % Subplot 1: Original segmentation with initial transducer and focus positions
         % Subplot 2: Original segmentation with slice cap applied
         % Subplot 3: Final segmentation with updated transducer and focus positions
+        try   % mpicbs: fail-soft — positioning QC plots (show_3d_head) have matrix-array bugs; skip on error
         show_positioning_plots(...
             tissues_mask_image, ...
             tissues_mask_header.PixelDimensions(1), ...
@@ -615,6 +616,9 @@ function [medium_masks, segmentation_crop, bone_mask_crop, pseudoCT_crop, trans_
             fpos_sim, ...
             parameters, ...
             output_plot_filename);
+        catch ME_qc
+            warning('mpicbs: positioning QC plot skipped (matrix-array incompatibility): %s', ME_qc.message);
+        end
     end
 
 end

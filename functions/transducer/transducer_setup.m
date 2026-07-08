@@ -133,7 +133,17 @@ function [transducer_mask, source_label, tr] = ...
                 r_c_grid = r_c * 1e3 / grid_res_mm;
                 diameter_grid = diameter * 1e3 / grid_res_mm;
 
-                bowl = makeBowl(grid_dims, el_pos_grid_i, r_c_grid, diameter_grid, natural_focus_pos_grid);
+                % Fail-soft for matrix arrays (mpicbs): makeBowl can fail when the natural
+                % focus lands off-grid (e.g. a downward-pointing array in the unrotated QC
+                % frame) — mark just the element-centre voxel so the mask/crop/QC still work.
+                % The actual acoustic source is the kWaveArray (create_matrix_karray), not this mask.
+                try
+                    bowl = makeBowl(grid_dims, el_pos_grid_i, r_c_grid, diameter_grid, natural_focus_pos_grid);
+                catch
+                    bowl = zeros(grid_dims);
+                    p = round(el_pos_grid_i(:)');
+                    if all(p >= 1) && all(p <= grid_dims), bowl(p(1), p(2), p(3)) = 1; end
+                end
 
                 % Add the current element's bowl geometry to the binary mask
                 transducer_mask = transducer_mask + bowl;

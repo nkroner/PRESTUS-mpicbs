@@ -82,8 +82,12 @@ end
     end
     comp_grid_size = size(sensor_data.p_max_all);
     after_exit_plane_mask = ones(comp_grid_size);
-    bowl_depth_grid = round((tr.(tr.type).curv_radius_mm-...
-        tr.(tr.type).dist_geom_ep_mm)/parameters.grid.resolution_mm);
+    if isfinite(tr.(tr.type).curv_radius_mm)
+        bowl_depth_grid = round((tr.(tr.type).curv_radius_mm-...
+            tr.(tr.type).dist_geom_ep_mm)/parameters.grid.resolution_mm);
+    else
+        bowl_depth_grid = 0;   % flat array: exit plane is at the array face (no bowl depth)
+    end
     % Places the exit plane mask in the grid, adjusted to the amount of dimensions
     if numel(parameters.grid.dims) == 3
         if trans_pos(3) > comp_grid_size(3)/2
@@ -232,6 +236,8 @@ end
             for i_slice = 1:numel(slices)
                 slice = slices(i_slice);
 
+                try   % mpicbs fail-soft: plot_transducer_overlay draws a curved bowl arc from
+                      % curv_radius, which is Inf for a flat array — skip this intensity-overlay QC then.
                 [~,~,~,~,~,~,~,h]=plot_overlay(...
                     acoustic_Ipa, ...
                     segmentation, ...
@@ -257,6 +263,9 @@ end
                 set(h, 'InvertHardcopy', 'off');
                 saveas(h, output_plot, 'png');
                 close(h);
+                catch ME_ovl
+                    warning('mpicbs: intensity overlay QC skipped (flat-array curved-bowl draw): %s', ME_ovl.message);
+                end
             end
         else
             h = plot_overlay_2d(...

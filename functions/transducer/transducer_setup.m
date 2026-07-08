@@ -109,9 +109,32 @@ function [transducer_mask, source_label, tr] = ...
 
             natural_focus_pos_grid = round(natural_focus_pos_m * 1e3 / grid_res_mm);
 
+            % Flat array (curv_radius = inf): the fzero/makeBowl path below assumes a finite
+            % bowl (a_max = r_c*0.999 = inf breaks fzero). Render a flat, area-matched disc
+            % footprint in the aperture plane instead. This mask is only used for the crop +
+            % QC overlay; the real acoustic source is the kWaveArray (create_matrix_karray).
+            is_flat = ~isfinite(tr.matrix.curv_radius_mm);
+
             % Loop through each transducer element to create its geometry
             for el_i = 1:tr.elem_n
                 el_pos_grid_i = elem_pos_grid(:, el_i);
+
+                if is_flat
+                    bowl = zeros(grid_dims);
+                    r_el_grid = 0.5 * sqrt(tr.matrix.elem_height_mm * tr.matrix.elem_width_mm) * 1e3 / grid_res_mm;
+                    ex = round(el_pos_grid_i(1)); ey = round(el_pos_grid_i(2)); ez = round(el_pos_grid_i(3));
+                    rr = max(0, ceil(r_el_grid));
+                    for dx = -rr:rr
+                        for dy = -rr:rr
+                            if dx^2 + dy^2 <= r_el_grid^2 + eps
+                                xx = ex + dx; yy = ey + dy;
+                                if xx >= 1 && xx <= grid_dims(1) && yy >= 1 && yy <= grid_dims(2) && ez >= 1 && ez <= grid_dims(3)
+                                    bowl(xx, yy, ez) = 1;
+                                end
+                            end
+                        end
+                    end
+                else
 
                 r_c = tr.matrix.curv_radius_mm / 1e3;
                 A_target = tr.matrix.elem_height_mm * tr.matrix.elem_width_mm;
@@ -143,6 +166,7 @@ function [transducer_mask, source_label, tr] = ...
                     bowl = zeros(grid_dims);
                     p = round(el_pos_grid_i(:)');
                     if all(p >= 1) && all(p <= grid_dims), bowl(p(1), p(2), p(3)) = 1; end
+                end
                 end
 
                 % Add the current element's bowl geometry to the binary mask

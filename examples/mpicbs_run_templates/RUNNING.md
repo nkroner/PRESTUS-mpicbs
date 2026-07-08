@@ -51,6 +51,15 @@ Results in `simulations/sub-<NN>/`: `*_report*.html` (open in a browser), `*.csv
 metrics), `nii/` (pressure/intensity volumes). **Always sanity-check the focus is in the brain**
 (HTML report) **and outputs are finite** (esp. first `cpp_gpu` run on new hardware).
 
+## Uncertainty analysis (optional advanced pipeline)
+Runs 3 skull-property variants (default / liberal / conservative) + a unified report. Use the
+`uncertainty.m` + `uncertainty.sbatch` templates here (matlab platform), or the commented slurm
+block in `uncertainty.m` (5 parallel dependency-linked jobs). It bakes in the three traps we hit:
+clear `transducer.target_isppa_wcm2` (else a free-water baseline runs on **CPU** in stage 1,
+~80 min ×3), use `cpp_gpu`, and on the **slurm** path use **manual** placement (heuristic halts
+there). Both platforms are validated (~8 min at 1.0 mm). See `doc/doc_uncertainty.md` and memory
+`prestus-uncertainty-pipeline`.
+
 ## Notes
 - Config `resolution_mm` may be a coarse smoke-test value — the template sets it explicitly
   (0.5 mm = production). At 0.5 mm keep `--gres gpu_mem:20000M` (needs a 24 GB+ GPU).

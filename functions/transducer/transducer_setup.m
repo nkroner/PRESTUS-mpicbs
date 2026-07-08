@@ -109,31 +109,54 @@ function [transducer_mask, source_label, tr] = ...
 
             natural_focus_pos_grid = round(natural_focus_pos_m * 1e3 / grid_res_mm);
 
+            % Flat array (curv_radius = inf): the fzero/makeBowl path below assumes a finite
+            % bowl (a_max = r_c*0.999 = Inf breaks fzero). Render a flat, area-matched disc
+            % footprint in the aperture plane instead. This mask is used only for the crop +
+            % QC overlay; the real acoustic source is the kWaveArray (create_matrix_karray).
+            is_flat = ~isfinite(tr.matrix.curv_radius_mm);
+
             % Loop through each transducer element to create its geometry
             for el_i = 1:tr.elem_n
                 el_pos_grid_i = elem_pos_grid(:, el_i);
 
-                r_c = tr.matrix.curv_radius_mm / 1e3;
-                A_target = tr.matrix.elem_height_mm * tr.matrix.elem_width_mm;
-                a_min = 0.001; % Lower bound of aperture radius (in m)
-                a_max = r_c * 0.999; % Slightly less than full bowl radius
+                if is_flat
+                    bowl = zeros(grid_dims);
+                    r_el_grid = 0.5 * sqrt(tr.matrix.elem_height_mm * tr.matrix.elem_width_mm) * 1e3 / grid_res_mm;
+                    ex = round(el_pos_grid_i(1)); ey = round(el_pos_grid_i(2)); ez = round(el_pos_grid_i(3));
+                    rr = max(0, ceil(r_el_grid));
+                    for dx = -rr:rr
+                        for dy = -rr:rr
+                            if dx^2 + dy^2 <= r_el_grid^2 + eps
+                                xx = ex + dx; yy = ey + dy;
+                                if xx >= 1 && xx <= grid_dims(1) && yy >= 1 && yy <= grid_dims(2) && ez >= 1 && ez <= grid_dims(3)
+                                    bowl(xx, yy, ez) = 1;
+                                end
+                            end
+                        end
+                    end
+                else
+                    r_c = tr.matrix.curv_radius_mm / 1e3;
+                    A_target = tr.matrix.elem_height_mm * tr.matrix.elem_width_mm;
+                    a_min = 0.001; % Lower bound of aperture radius (in m)
+                    a_max = r_c * 0.999; % Slightly less than full bowl radius
 
-                % Define the function to solve: A_cap(a) - A_target = 0
-                area_diff = @(a) 2*pi*r_c*(r_c - sqrt(r_c^2 - a^2)) - A_target;
+                    % Define the function to solve: A_cap(a) - A_target = 0
+                    area_diff = @(a) 2*pi*r_c*(r_c - sqrt(r_c^2 - a^2)) - A_target;
 
-                % Check if the function changes sign in the interval
-                if sign(area_diff(a_min)) == sign(area_diff(a_max))
-                    error('No sign change in interval: cannot find bowl diameter. Possibly A_target is out of bounds.');
+                    % Check if the function changes sign in the interval
+                    if sign(area_diff(a_min)) == sign(area_diff(a_max))
+                        error('No sign change in interval: cannot find bowl diameter. Possibly A_target is out of bounds.');
+                    end
+
+                    a_solution = fzero(area_diff, [a_min, a_max]);
+                    diameter = 2 * a_solution;
+
+                    % Convert to grid dimensions
+                    r_c_grid = r_c * 1e3 / grid_res_mm;
+                    diameter_grid = diameter * 1e3 / grid_res_mm;
+
+                    bowl = makeBowl(grid_dims, el_pos_grid_i, r_c_grid, diameter_grid, natural_focus_pos_grid);
                 end
-
-                a_solution = fzero(area_diff, [a_min, a_max]);
-                diameter = 2 * a_solution;
-
-                % Convert to grid dimensions
-                r_c_grid = r_c * 1e3 / grid_res_mm;
-                diameter_grid = diameter * 1e3 / grid_res_mm;
-
-                bowl = makeBowl(grid_dims, el_pos_grid_i, r_c_grid, diameter_grid, natural_focus_pos_grid);
 
                 % Add the current element's bowl geometry to the binary mask
                 transducer_mask = transducer_mask + bowl;

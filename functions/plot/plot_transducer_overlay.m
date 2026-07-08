@@ -53,14 +53,23 @@ end
 r = max_od / 2 / grid_step;
 
 % Exit plane positions (two methods for consistency)
-dist_to_exit_plane_mm = tr.(tr.type).curv_radius_mm - tr.(tr.type).dist_geom_ep_mm;
-dist_to_exit_plane_vox = round(dist_to_exit_plane_mm / parameters.grid.resolution_mm);
-ex_plane_x_simple = trans_pos(2) - 1 + dist_to_exit_plane_vox;  % Rectangle method
+if isfinite(tr.(tr.type).curv_radius_mm)
+    dist_to_exit_plane_mm = tr.(tr.type).curv_radius_mm - tr.(tr.type).dist_geom_ep_mm;
+    dist_to_exit_plane_vox = round(dist_to_exit_plane_mm / parameters.grid.resolution_mm);
+    ex_plane_x_simple = trans_pos(2) - 1 + dist_to_exit_plane_vox;  % Rectangle method
 
-% Full geometry (for curved visualization)
-geom_focus_pos = trans_pos(:)' - (tr.(tr.type).curv_radius_mm / grid_step) * [cos(focal_angle), sin(focal_angle)];
-dist_to_ep = 0.5 * sqrt(4*tr.(tr.type).curv_radius_mm^2 - max_od^2) / grid_step;
-ex_plane_pos_trig = geom_focus_pos + dist_to_ep * [cos(focal_angle), sin(focal_angle)];
+    % Full geometry (for curved visualization)
+    geom_focus_pos = trans_pos(:)' - (tr.(tr.type).curv_radius_mm / grid_step) * [cos(focal_angle), sin(focal_angle)];
+    dist_to_ep = 0.5 * sqrt(4*tr.(tr.type).curv_radius_mm^2 - max_od^2) / grid_step;
+    ex_plane_pos_trig = geom_focus_pos + dist_to_ep * [cos(focal_angle), sin(focal_angle)];
+else
+    % Flat array (curv_radius = inf): exit plane is the array face; no geometric focus / bowl arc
+    dist_to_exit_plane_vox = 0;
+    ex_plane_x_simple = trans_pos(2) - 1;
+    geom_focus_pos = trans_pos(:)';
+    dist_to_ep = 0;
+    ex_plane_pos_trig = trans_pos(:)';
+end
 ort_angle = atan2(-focal_slope(1), focal_slope(2));
 
 %% 2. VISUAL PROPERTIES
@@ -138,11 +147,13 @@ right_edge_y = ex_plane_pos_trig(1) + r * cos(ort_angle);
 line([left_edge_x, right_edge_x], [left_edge_y, right_edge_y], ...
      'LineWidth', lineWidth, 'Color', boxColor, 'LineStyle', ':');
 
-% Curved front surface
-arc_halfangle = atan((max_od/2) / (dist_to_ep * grid_step));
-[arc_x, arc_y] = get_arc(geom_focus_pos, tr.(tr.type).curv_radius_mm/grid_step, ...
-                        focal_angle-arc_halfangle, focal_angle+arc_halfangle);
-plot(arc_y, arc_x, 'Color', boxColor, 'LineWidth', lineWidth);
+% Curved front surface (only for a curved bowl; a flat array has no arc to draw)
+if isfinite(tr.(tr.type).curv_radius_mm)
+    arc_halfangle = atan((max_od/2) / (dist_to_ep * grid_step));
+    [arc_x, arc_y] = get_arc(geom_focus_pos, tr.(tr.type).curv_radius_mm/grid_step, ...
+                            focal_angle-arc_halfangle, focal_angle+arc_halfangle);
+    plot(arc_y, arc_x, 'Color', boxColor, 'LineWidth', lineWidth);
+end
 
 hold off;
 end

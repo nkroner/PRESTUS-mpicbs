@@ -63,9 +63,15 @@ function [rotated_img, trans_pos_new, focus_pos_new, transformation_matrix, rota
     if ~isfield(parameters.transducer(1), 'align_to_focus') || parameters.transducer(1).align_to_focus
         focal_axis = [focus_pos_grid - trans_pos_grid, 1]';
     else
-        % Use the natural focus based on transducer curvature
+        % Use the natural (geometric) focus based on transducer curvature. For a flat array
+        % (curv_radius = inf) the geometric axis is simply the array normal (+z).
+        % (grid.resolution_mm — parameters.grid_step_mm was a typo that is never set.)
         curv_radius = parameters.transducer(1).(parameters.transducer(1).type).curv_radius_mm;
-        natural_focus = trans_pos_grid + [0, 0, curv_radius / parameters.grid_step_mm];
+        if isfinite(curv_radius)
+            natural_focus = trans_pos_grid + [0, 0, curv_radius / parameters.grid.resolution_mm];
+        else
+            natural_focus = trans_pos_grid + [0, 0, 1];
+        end
         focal_axis = [natural_focus - trans_pos_grid, 1]';
     end
 

@@ -127,19 +127,28 @@ function show_3d_head(segmented_img, target_xyz, trans_xyz, parameters, pixel_si
             if ~isfield(tr, 'align_to_focus') || tr.align_to_focus
                 norm_vec = (thisTrans - thisTarg) / norm(thisTrans - thisTarg);
 
-            else
+            elseif isfinite(tr.(tr.type).curv_radius_mm)
                 % Use the natural focus based on transducer curvature
+                % (grid.resolution_mm — parameters.grid_step_mm was a typo, never set)
                 curv_radius = tr.(tr.type).curv_radius_mm;
-                natural_focus = trans_pos_grid + [0, 0, curv_radius / parameters.grid_step_mm];
+                natural_focus = trans_pos_grid + [0, 0, curv_radius / parameters.grid.resolution_mm];
                 natural_focus_grid = natural_focus / pixel_size;
 
                 norm_vec = (thisTrans - natural_focus_grid) / norm(thisTrans - natural_focus_grid);
+            else
+                % Flat array (curv_radius = inf): the transducer axis is the array normal (+z)
+                norm_vec = [0, 0, 1];
             end
 
-            % Geometric focus in grid space
-            geom_focus = thisTrans - norm_vec * (tr.(tr.type).curv_radius_mm) / pixel_size;
-            dist_gf_to_ep_mm = 0.5 * sqrt(4 * tr.(tr.type).curv_radius_mm^2 - max_od_mm^2);
-            ex_plane = geom_focus + norm_vec * dist_gf_to_ep_mm / pixel_size;
+            % Geometric focus in grid space. For a flat array there is no bowl: the exit
+            % plane is the array face itself (no geometric focus behind it).
+            if isfinite(tr.(tr.type).curv_radius_mm)
+                geom_focus = thisTrans - norm_vec * (tr.(tr.type).curv_radius_mm) / pixel_size;
+                dist_gf_to_ep_mm = 0.5 * sqrt(4 * tr.(tr.type).curv_radius_mm^2 - max_od_mm^2);
+                ex_plane = geom_focus + norm_vec * dist_gf_to_ep_mm / pixel_size;
+            else
+                ex_plane = thisTrans;
+            end
 
             % Now get full-res (voxel) coordinates, then downsample
             d = sum(norm_vec .* ex_plane);

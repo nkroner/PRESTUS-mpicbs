@@ -52,6 +52,11 @@ end
 
     natural_focus_pos_m = trans_pos_m + [0, 0, tr.matrix.curv_radius_mm / 1000]';
 
+    % Flat array (curv_radius = inf): elements are coplanar and all face +z, so there is
+    % no per-element tilt and no finite natural bowl focus. Guarded below so the existing
+    % curved path is byte-for-byte unchanged. Steering is unaffected (it is set by phase).
+    is_flat = ~isfinite(tr.matrix.curv_radius_mm);
+
     % Apply Clover setup if requested
     if tr.matrix.is_clover_setup    
         elem_pos_m = create_clover_array(parameters, tr.matrix, elem_pos_m, trans_pos_m, focus_pos_m);
@@ -77,25 +82,34 @@ end
     for ind = 1:tr.matrix.elem_n
         el_pos_m_i = elem_pos_m(:, ind);
 
-        % Vector from element to natural focus to position elements to
-        % natural focus
-        vec_to_nat_focus = natural_focus_pos_m - el_pos_m_i;
-        norm_vec = vec_to_nat_focus / norm(vec_to_nat_focus);
-        scaled_vectors(:, ind) = vec_to_nat_focus;
+        if is_flat
+            % Flat aperture: all elements face +z, no tilt. Use a +z reference point for
+            % disc orientation instead of the (infinite) natural focus.
+            roll = 0; pitch = 0; yaw = 0;
+            elem_ref_pos = el_pos_m_i + [0; 0; 1];
+            scaled_vectors(:, ind) = [0; 0; 1];
+        else
+            % Vector from element to natural focus to position elements to
+            % natural focus
+            vec_to_nat_focus = natural_focus_pos_m - el_pos_m_i;
+            norm_vec = vec_to_nat_focus / norm(vec_to_nat_focus);
+            scaled_vectors(:, ind) = vec_to_nat_focus;
 
-        % Compute rotation matrix to align default normal [0;0;1] to vec_to_focus
-        z0 = [0;0;1];
-        v = cross(z0, norm_vec);
-        s = norm(v);
-        c = dot(z0, norm_vec);
-        vx = [ 0 -v(3) v(2); v(3) 0 -v(1); -v(2) v(1) 0 ];
-        R = eye(3) + vx + vx^2*((1-c)/(s^2+eps));
+            % Compute rotation matrix to align default normal [0;0;1] to vec_to_focus
+            z0 = [0;0;1];
+            v = cross(z0, norm_vec);
+            s = norm(v);
+            c = dot(z0, norm_vec);
+            vx = [ 0 -v(3) v(2); v(3) 0 -v(1); -v(2) v(1) 0 ];
+            R = eye(3) + vx + vx^2*((1-c)/(s^2+eps));
 
 
-        % Convert rotation matrix to ZYX Euler angles (extrinsic)
-        yaw   = atan2d(R(2,1), R(1,1));  % around z
-        pitch = atan2d(-R(3,1), sqrt(R(3,2)^2 + R(3,3)^2));  % around y
-        roll  = atan2d(R(3,2), R(3,3));  % around x
+            % Convert rotation matrix to ZYX Euler angles (extrinsic)
+            yaw   = atan2d(R(2,1), R(1,1));  % around z
+            pitch = atan2d(-R(3,1), sqrt(R(3,2)^2 + R(3,3)^2));  % around y
+            roll  = atan2d(R(3,2), R(3,3));  % around x
+            elem_ref_pos = natural_focus_pos_m;
+        end
 
         tx(ind) = roll;
         ty(ind) = pitch;
@@ -109,26 +123,32 @@ end
             case 'disc'
                 % Disc with same area as rectangular element
                 diameter = sqrt(tr.matrix.elem_height_mm * tr.matrix.elem_width_mm * 4 / pi);
-                karray.addDiscElement(el_pos_m_i, diameter, natural_focus_pos_m);
+                karray.addDiscElement(el_pos_m_i, diameter, elem_ref_pos);
 
             case 'bowl'
-                r_c = tr.matrix.curv_radius_mm / 1e3;
-                A_target = tr.matrix.elem_height_mm * tr.matrix.elem_width_mm;
-                a_min = 0.001; % Lower bound of aperture radius (in m)
-                a_max = r_c * 0.999; % Slightly less than full bowl radius
+                if is_flat
+                    % Flat array: a bowl element degenerates to a flat, area-matched disc
+                    diameter = sqrt(tr.matrix.elem_height_mm * tr.matrix.elem_width_mm * 4 / pi);
+                    karray.addDiscElement(el_pos_m_i, diameter, elem_ref_pos);
+                else
+                    r_c = tr.matrix.curv_radius_mm / 1e3;
+                    A_target = tr.matrix.elem_height_mm * tr.matrix.elem_width_mm;
+                    a_min = 0.001; % Lower bound of aperture radius (in m)
+                    a_max = r_c * 0.999; % Slightly less than full bowl radius
 
-                
-                % Define the function to solve: A_cap(a) - A_target = 0
-                area_diff = @(a) 2*pi*r_c*(r_c - sqrt(r_c^2 - a^2)) - A_target;
 
-                % Check if the function changes sign in the interval
-                if sign(area_diff(a_min)) == sign(area_diff(a_max))
-                    error('No sign change in interval: cannot find bowl diameter. Possibly A_target is out of bounds.');
+                    % Define the function to solve: A_cap(a) - A_target = 0
+                    area_diff = @(a) 2*pi*r_c*(r_c - sqrt(r_c^2 - a^2)) - A_target;
+
+                    % Check if the function changes sign in the interval
+                    if sign(area_diff(a_min)) == sign(area_diff(a_max))
+                        error('No sign change in interval: cannot find bowl diameter. Possibly A_target is out of bounds.');
+                    end
+
+                    a_solution = fzero(area_diff, [a_min, a_max]);
+                    diameter = 2 * a_solution;
+                    karray.addBowlElement(el_pos_m_i, r_c, diameter, natural_focus_pos_m);
                 end
-
-                a_solution = fzero(area_diff, [a_min, a_max]);
-                diameter = 2 * a_solution;
-                karray.addBowlElement(el_pos_m_i, r_c, diameter, natural_focus_pos_m);
         end
 
         % Calculate phase delay based on set focus

@@ -1,3 +1,10 @@
+> **🏛️ MPI-CBS distribution of PRESTUS.** A fork of [Donders-Institute/PRESTUS](https://github.com/Donders-Institute/PRESTUS)
+> adapted for the MPI-CBS Leipzig compute environment, with added support for **truly flat 2D matrix / phased arrays**.
+> **Start here:** [`README_MPICBS.md`](README_MPICBS.md) (what's added + how to sync upstream) and
+> [`SETUP_MPICBS.md`](SETUP_MPICBS.md) (storage, conda, Slurm, GPU). The upstream README below still applies.
+
+---
+
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15095860.svg)](https://doi.org/10.5281/zenodo.15095860)
 
 # PRESTUS: PREprocessing & Simulations for Transcranial Ultrasound Stimulation

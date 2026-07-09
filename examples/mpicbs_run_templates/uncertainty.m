@@ -13,7 +13,7 @@
 %       the slurm platform heuristic HALTS (2-stage) → use manual placement there
 %       (see the slurm block at the bottom).
 % ============================================================================
-root='/data/u_kroner_software/git/PRESTUS'; cfgdir='/data/u_kroner_software/git/PRESTUS_config';
+root='/data/YOUR_SOFTWARE_BLOCK/git/PRESTUS'; cfgdir='/data/YOUR_SOFTWARE_BLOCK/git/PRESTUS_config';
 addpath(genpath(fullfile(root,'functions'))); addpath(genpath(fullfile(root,'config'))); addpath(genpath(fullfile(root,'external')));
 parameters = load_parameters('config_prestus_mpicbs.yaml', cfgdir);
 

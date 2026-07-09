@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
-SRC=/data/u_kroner_software/git/PRESTUS_setup/kwave-build/source/kspaceFirstOrder-CUDA
-BE=/data/u_kroner_software/miniforge/envs/kwave_build
+SRC=/data/YOUR_SOFTWARE_BLOCK/git/PRESTUS_setup/kwave-build/source/kspaceFirstOrder-CUDA
+BE=/data/YOUR_SOFTWARE_BLOCK/miniforge/envs/kwave_build
 echo "nvcc: $(which nvcc)"; nvcc --version | tail -2; echo "g++: $(g++ --version | head -1)"
 # Old k-Wave 1.3 source assumed transitive std includes that gcc-12 libstdc++ no longer provides.
 # Force-include the common headers into every nvcc compilation unit.

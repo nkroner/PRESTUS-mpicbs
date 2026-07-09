@@ -14,7 +14,7 @@ cluster's own CUDA 12.5. **`nvcc` 12.5 and `gcc-12` are on the GPU nodes**, so n
 - Build-deps conda env **`kwave_build`** (`mamba create -n kwave_build -c conda-forge hdf5 zlib zstd`)
   — provides HDF5 headers + `libhdf5.so.320`, which the binary finds at runtime via **rpath**.
 
-## Recipe (all under `/data/u_kroner_software/git/PRESTUS_setup/kwave-build/`)
+## Recipe (all under `/data/YOUR_SOFTWARE_BLOCK/git/PRESTUS_setup/kwave-build/`)
 1. **Source:** `curl -L "http://www.k-wave.org/getfile.php?id=207" -o src.zip` (k-Wave 1.3 CUDA
    source; 1.3-binary + 1.4-toolbox is PRESTUS's intended combo). `unzip` → `source/kspaceFirstOrder-CUDA/`.
 2. **Fix the Makefile** (this download ships recipes indented with **spaces, not tabs**):
@@ -44,7 +44,7 @@ cluster's own CUDA 12.5. **`nvcc` 12.5 and `gcc-12` are on the GPU nodes**, so n
 cp examples/mpicbs_cpp_gpu_build/binaries/kspaceFirstOrder-CUDA external/k-wave/k-Wave/binaries/
 chmod +x external/k-wave/k-Wave/binaries/kspaceFirstOrder-CUDA
 ```
-**Caveat — not portable.** It has an absolute **rpath** to `/data/u_kroner_software/miniforge/envs/kwave_build/lib`
+**Caveat — not portable.** It has an absolute **rpath** to `/data/YOUR_SOFTWARE_BLOCK/miniforge/envs/kwave_build/lib`
 (HDF5) and `/usr/local/cuda-12.5/lib64`, and SASS for `sm_75`+`sm_86` only. It works **only on
 this MPI-CBS system** with the `kwave_build` env present. On a different machine, or if that env
 moves, **rebuild** instead. The OMP (`cpp_cpu`) binary is not stored here (46 MB) — build it via

@@ -3,8 +3,8 @@
 % it via the companion 02_pipeline.sbatch on a GPU node. One subject + target;
 % acoustic (+ optional thermal) in a single job. See RUNNING.md.
 % ============================================================================
-root   = '/data/u_kroner_software/git/PRESTUS';
-cfgdir = '/data/u_kroner_software/git/PRESTUS_config';
+root   = '/data/YOUR_SOFTWARE_BLOCK/git/PRESTUS';
+cfgdir = '/data/YOUR_SOFTWARE_BLOCK/git/PRESTUS_config';
 addpath(genpath(fullfile(root,'functions')));
 addpath(genpath(fullfile(root,'config')));
 addpath(genpath(fullfile(root,'external')));

@@ -88,3 +88,5 @@ $RECYCLE.BIN/
 core.*
 .Rhistory
 .claude
+# MPI-CBS: do not commit env-specific compiled k-Wave binaries
+examples/mpicbs_cpp_gpu_build/binaries/kspaceFirstOrder-*

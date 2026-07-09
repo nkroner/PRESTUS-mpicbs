@@ -1,8 +1,8 @@
 # CLAUDE.md — PRESTUS (project)
 
 > Project memory for the PRESTUS ultrasound-simulation toolbox at MPI-CBS.
-> **The institute environment (storage, Conda, software system, Slurm, GPUs, MATLAB) is in the
-> global `~/.claude/CLAUDE.md`, which loads alongside this file — it is NOT repeated here.**
+> **The MPI-CBS institute environment (storage, Conda, software system, Slurm, GPUs, MATLAB) is
+> documented in [`SETUP_MPICBS.md`](SETUP_MPICBS.md) — read that first for the compute setup.**
 > This file covers only PRESTUS-specific setup and decisions.
 
 ## Read the PRESTUS docs first
@@ -37,7 +37,7 @@ is **ahead**. So:
 Framing: the docs assume the **Donders HPC** (its modules, paths, scheduler, defaults). **This
 is MPI-CBS, not that** — adapt everything to the global file's constraints (10 GB home,
 conda-forge-only, the UPPERCASE system, `getserver`/Slurm, conda envs under
-`/data/u_kroner_software/miniforge/envs`).
+`/data/YOUR_SOFTWARE_BLOCK/miniforge/envs`).
 
 **MPI-CBS how-tos (ours, not upstream):** run a subject end-to-end →
 `examples/mpicbs_run_templates/RUNNING.md` (+ copy-edit-submit templates); build/deploy the
@@ -56,25 +56,26 @@ reference — `doc_parameters.md`, `doc_modules.md`, `doc_backend.md`, `doc_hpc.
 
 ## Install layout — code vs. data
 
-- **Toolbox (code + conda env) → `/data/u_kroner_software/git/PRESTUS`** (personal software
+- **Toolbox (code + conda env) → `/data/YOUR_SOFTWARE_BLOCK/git/PRESTUS`** (personal software
   block). Stays here — this is the install.
-- **Conda env: `PRESTUS_env_4.6.0`** under `/data/u_kroner_software/miniforge/envs/` — SimNIBS
+- **Conda env: `PRESTUS_env_4.6.0`** under `/data/YOUR_SOFTWARE_BLOCK/miniforge/envs/` — SimNIBS
   4.6.0 (PRESTUS's tested pin) + PlanTUS Python deps (`nilearn`, `vtk`, `h5py`, `pynput`).
   Connectome Workbench is **not** in the env — `wb_command` comes from the system `deb` install
   (`/bin/wb_command`). If PlanTUS placement is adopted (it auto-discovers `wb_command` in the
   env `bin/`), either install `connectome-workbench` into the env then, or set
   `placement.plantus.connectome_wb_path` to `/bin`.
-- **Working data → `/data/p_03135/PRESTUS`** (LITFUS_MRT, general TUS-dev storage): Ernie
+- **Working data → `/data/YOUR_STUDY_BLOCK/PRESTUS`** (LITFUS_MRT, general TUS-dev storage): Ernie
   download, `charm` segmentations, acoustic/thermal sim outputs, curated results.
   - **Capacity note:** bulk outputs go on the **`p_03135`** block (1 TB) *despite being
     regenerable*, because **`pt_03135` is only 10 GB** — too small for sim output. Reserve
     `pt_03135` for small transient scratch; use node-local `/tmp` for heavy per-job I/O and copy
     finals back (see the global file's storage/Slurm sections).
 - Study-specific subject data/outputs → that study's own block (e.g. UMBRELLA/NAcc →
-  `/data/p_03204`). Keep the toolbox **study-agnostic** — it's for all current & future TUS
+  `/data/YOUR_OTHER_STUDY_BLOCK`). Keep the toolbox **study-agnostic** — it's for all current & future TUS
   studies.
-- **Personal setup for now** (Niklas's own use). Group sharing isn't solved yet — a Notion
-  walkthrough for others is planned later; don't optimise this install for multi-user access.
+- **Shared MPI-CBS distribution.** This is the institute's PRESTUS deployment; each user keeps
+  their own install under their personal software block and their own data under their study
+  block (all such paths are placeholders — see `SETUP_MPICBS.md`).
 
 ## Input images — check orientation first (PRESTUS assumes RAS)
 
@@ -90,7 +91,7 @@ print(''.join(nib.aff2axcodes(nib.load('sub-XXX_T1w.nii.gz').affine)))   # want:
 ```
 
 In practice this is a non-issue for our real scans — Siemens MPRAGE / `dcm2niix` output (e.g.
-`/data/p_03204/...`) is **RAS**, so `ensure_ras_plus` is a no-op and nothing breaks. It only
+`/data/YOUR_OTHER_STUDY_BLOCK/...`) is **RAS**, so `ensure_ras_plus` is a no-op and nothing breaks. It only
 bit us on the **SimNIBS Ernie *example* T1, which is PSR** (unusual, axis-permuted). If a
 dataset ever comes in non-RAS, reorient before `charm`: `nib.as_closest_canonical(im)` **then
 `im.set_qform(im.affine, code=1)` + `set_sform(..., code=1)`** (canonical alone leaves
@@ -131,12 +132,12 @@ SimNIBS / `wb_command` — useful references for how MPI-CBS constraints were so
 Resolved, evolving config (`simnibs_bin_path`, `ld_library_path`, `plantus.script_path`/
 `env_path`, the config overrides, the Slurm job template) is **not duplicated here** to avoid
 drift. Source of truth: the **external project config dir
-`/data/u_kroner_software/git/PRESTUS_config/`** — kept outside the toolbox (per
+`/data/YOUR_SOFTWARE_BLOCK/git/PRESTUS_config/`** — kept outside the toolbox (per
 `doc_getting-started.md`) so toolbox updates don't clobber it. It holds
 `config_prestus_mpicbs.yaml` (an **overrides-only** file — only the deltas from the default,
 deep-merged onto it) plus a copy of `config_default.yaml` as the merge base (never edit the
 default). Load with
-`load_parameters('config_prestus_mpicbs.yaml', '/data/u_kroner_software/git/PRESTUS_config')`.
+`load_parameters('config_prestus_mpicbs.yaml', '/data/YOUR_SOFTWARE_BLOCK/git/PRESTUS_config')`.
 See also Claude Code's own project memory (`/memory`). This file holds the durable decisions;
 live paths live with the config.
 

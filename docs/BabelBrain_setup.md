@@ -18,7 +18,7 @@ thermal rise. Acoustic/thermal FDTD solves run on GPU (CUDA preferred over OpenC
 
 ## Where it lives / how it's installed
 
-- **Repo:** `/data/u_kroner_software/git/BabelBrain` (public repo, HTTPS clone).
+- **Repo:** `/data/YOUR_SOFTWARE_BLOCK/git/BabelBrain` (public repo, HTTPS clone).
 - **Conda env: `BabelBrainLinux`** — note the name (a common error is calling it `BabelBrain`).
   conda-forge only (Anaconda block). Shell init uses `mamba shell init --shell bash` (not the
   old `mamba init bash`).

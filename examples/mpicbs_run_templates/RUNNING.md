@@ -9,8 +9,8 @@ transducer, placement, interpreting outputs) see the PRESTUS docs in `doc/` and
 
 ## Prerequisites (already set up)
 - Conda env `PRESTUS_env_4.6.0`, MATLAB R2023b (`MATLAB --version 9.15 matlab`).
-- Config: `config_prestus_mpicbs.yaml` in `/data/u_kroner_software/git/PRESTUS_config/`.
-- Data root: `/data/p_03135/PRESTUS/{data,segmentation,simulations}`.
+- Config: `config_prestus_mpicbs.yaml` in `/data/YOUR_SOFTWARE_BLOCK/git/PRESTUS_config/`.
+- Data root: `/data/YOUR_STUDY_BLOCK/PRESTUS/{data,segmentation,simulations}`.
 - For `cpp_gpu`: the compiled binary must be deployed — see `../mpicbs_cpp_gpu_build/README.md`.
 
 ## Two things that will bite you if forgotten
@@ -21,13 +21,13 @@ transducer, placement, interpreting outputs) see the PRESTUS docs in `doc/` and
    submission host: `ssh "$(getserver -b)" 'sbatch /path/to/script.sbatch'`.
 
 ## Step 0 — stage the subject
-Put `sub-<NN>_T1w.nii.gz` (+ optional `sub-<NN>_T2w.nii.gz`) in `/data/p_03135/PRESTUS/data/`,
+Put `sub-<NN>_T1w.nii.gz` (+ optional `sub-<NN>_T2w.nii.gz`) in `/data/YOUR_STUDY_BLOCK/PRESTUS/data/`,
 RAS-checked.
 
 ## Step 1 — segmentation (charm, CPU, ~1.5 h)
 Copy `01_segmentation.sbatch`, set `SUBJ`/`T1`/`T2`, submit:
 ```bash
-ssh "$(getserver -b)" 'sbatch /data/p_03135/PRESTUS/segmentation/log_hpc/01_segmentation.sbatch'
+ssh "$(getserver -b)" 'sbatch /data/YOUR_STUDY_BLOCK/PRESTUS/segmentation/log_hpc/01_segmentation.sbatch'
 ```
 → produces `segmentation/m2m_sub-<NN>/`. (Do this once per subject; sims reuse it.)
 
@@ -38,14 +38,14 @@ Copy `run_pipeline.m` + `02_pipeline.sbatch` (e.g. into `simulations/log_hpc/`).
 (set `run_heating_sims=1` for thermal — it also uses the timing block). Point `RUN_M` in the
 sbatch at your edited `.m`, then:
 ```bash
-ssh "$(getserver -b)" 'sbatch /data/p_03135/PRESTUS/simulations/log_hpc/02_pipeline.sbatch'
+ssh "$(getserver -b)" 'sbatch /data/YOUR_STUDY_BLOCK/PRESTUS/simulations/log_hpc/02_pipeline.sbatch'
 ```
 
 ## Monitor + outputs
 ```bash
-ssh "$(getserver -b)" 'squeue -u kroner'                       # queue
+ssh "$(getserver -b)" 'squeue -u $USER'                       # queue
 ssh "$(getserver -b)" 'sacct -j <jobid> -X --format=State,Elapsed,NodeList'
-# logs: /data/p_03135/PRESTUS/simulations/log_hpc/pipeline_<jobid>.out|.err
+# logs: /data/YOUR_STUDY_BLOCK/PRESTUS/simulations/log_hpc/pipeline_<jobid>.out|.err
 ```
 Results in `simulations/sub-<NN>/`: `*_report*.html` (open in a browser), `*.csv` (Isppa/MI/focus
 metrics), `nii/` (pressure/intensity volumes). **Always sanity-check the focus is in the brain**

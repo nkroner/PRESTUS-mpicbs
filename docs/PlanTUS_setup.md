@@ -18,7 +18,7 @@ Workbench.
 
 - **Standalone `mlueckel/PlanTUS`** — the original, run on its own. This is what the Notion
   PlanTUS page documents.
-- **BabelBrain-integrated fork `spichardo/PlanTUS`** (`/data/u_kroner_software/git/PlanTUS`) —
+- **BabelBrain-integrated fork `spichardo/PlanTUS`** (`/data/YOUR_SOFTWARE_BLOCK/git/PlanTUS`) —
   adds wrapper code so BabelBrain can drive PlanTUS from its GUI. Clone this one *only* for the
   in-GUI integration.
 

@@ -11,12 +11,12 @@
 #SBATCH -c 8
 #SBATCH --mem 96G
 #SBATCH --time 02:59:00
-#SBATCH -o /data/p_03135/PRESTUS/simulations/log_hpc/uncertainty_%j.out
-#SBATCH -e /data/p_03135/PRESTUS/simulations/log_hpc/uncertainty_%j.err
+#SBATCH -o /data/YOUR_STUDY_BLOCK/PRESTUS/simulations/log_hpc/uncertainty_%j.out
+#SBATCH -e /data/YOUR_STUDY_BLOCK/PRESTUS/simulations/log_hpc/uncertainty_%j.err
 
 source /etc/profile 2>/dev/null || true
 # Do NOT put the conda env on PATH/LD_LIBRARY_PATH (breaks MATLAB's licence check).
-RUN_M=/data/p_03135/PRESTUS/simulations/log_hpc/uncertainty.m   # <- EDIT: your edited copy
+RUN_M=/data/YOUR_STUDY_BLOCK/PRESTUS/simulations/log_hpc/uncertainty.m   # <- EDIT: your edited copy
 
 echo "== node: $(hostname) =="; nvidia-smi --query-gpu=name --format=csv,noheader
 MATLAB --version 9.15 matlab -batch "run('${RUN_M}')"

@@ -1,0 +1,61 @@
+# Project-specific PRESTUS configuration: prestus_mpicbs
+# MPI-CBS Leipzig compute environment. Override only the parameters that differ
+# from config_default.yaml (deep-merged on top of it by load_parameters).
+# Load with:
+#   parameters = load_parameters('config_prestus_mpicbs.yaml', '/data/YOUR_SOFTWARE_BLOCK/git/PRESTUS_config');
+
+#------------ Startup (environment & toolbox paths) — MPI-CBS
+startup:
+  # Fresh, self-contained PRESTUS env (SimNIBS 4.6.0 + PlanTUS deps), conda-forge only.
+  simnibs_bin_path: '/data/YOUR_SOFTWARE_BLOCK/miniforge/envs/PRESTUS_env_4.6.0/bin'
+
+#------------ Paths — project I/O on study block p_03135
+path:
+  anat: '/data/YOUR_STUDY_BLOCK/PRESTUS/data'          # structural inputs (T1w / UTE NIfTIs go here)
+  seg:  '/data/YOUR_STUDY_BLOCK/PRESTUS/segmentation'  # SimNIBS m2m_sub-* folders
+  sim:  '/data/YOUR_STUDY_BLOCK/PRESTUS/simulations'   # simulation outputs
+
+#------------ High-performance computing — MPI-CBS adaptation (see task 10)
+hpc:
+  name: 'mpicbs'          # activates the MPI-CBS Slurm branch in hpc_submit_job.m
+                          # (MATLAB via UPPERCASE wrapper, GPUs via --gpus, no 'gpu' partition)
+  partition: 'standard'   # 'short' if runtime fits (sinfo --summarize); 'standard,group_servers'
+                          # to also reach drachenkopf/nagelrochen
+  cores: 8                # emitted as -c 8
+  gpu: ''                 # empty -> '--gpus 1' for matlab_gpu/cpp_gpu jobs; e.g. 'ampere:1' to pin arch
+  memorylimit: 32         # GB (--mem)
+  timelimit: '04:00:00'
+  # SimNIBS 4.6.0 bundled shared libs (analog of the Donders slurm ld_library_path).
+  # Only used when MATLAB shells out to SimNIBS; adjust if SimNIBS subprocess calls fail.
+  ld_library_path: '/data/YOUR_SOFTWARE_BLOCK/miniforge/envs/PRESTUS_env_4.6.0/lib/python3.11/site-packages/simnibs/external/bin/linux'
+
+#------------ Transducer (PLACEHOLDER — Sonic Concepts CTX-500, geometry from config/equipment/CTX_500_006.yaml)
+# NOTE: This is a stand-in until the lab's actual device is characterised and added to
+# config/equipment/. Source amplitude/phase are NOMINAL (uncalibrated): all elements in
+# phase -> beam focuses at the natural/geometric focus (~56.87 mm from the exit plane).
+# Replace elem_amp / elem_phase_deg with calibrated values (transducer_calibration) before
+# any quantitative ISPPA/dose work. trans_pos/focus_pos are subject/target-specific and are
+# set per run (placement), not here.
+transducer:
+  name: 'CTX_500_006'
+  type: 'annular'
+  freq_hz: 500000.0
+  target_isppa_wcm2: 20        # nominal free-water target [W/cm2]
+  focal_distance_ep: 56.87     # natural (geometric) focus from exit plane [mm]; matches all-zero phases
+  annular:
+    elem_n: 10
+    elem_id_mm: [0.0, 4.59969, 9.19937, 13.7991, 18.3987, 22.9984, 27.5981, 32.1978, 36.7975, 41.3972]
+    elem_od_mm: [4.09423, 8.69391, 13.2936, 17.8933, 22.493, 27.0927, 31.6923, 36.292, 40.8917, 45.4914]
+    elem_amp: 60000            # nominal pressure per element [Pa] — PLACEHOLDER, calibrate later
+    elem_phase_deg: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]  # all in phase -> geometric focus
+    curv_radius_mm: 63.2
+    dist_geom_ep_mm: 56.87
+    depth_mm: 10              # visualization only
+
+#------------ Simulation grid — COARSENED for cheap smoke testing
+# TEMPORARY: 1.0 mm gives PPW=3 at 500 kHz (below min_ppw=6 -> expect an accuracy warning),
+# ~8x fewer grid points than the 0.5 mm default -> fits any GPU and runs fast. The 0.5 mm
+# default 500 kHz run needed ~22 GB GPU and >2.5 h (timed out). RESTORE resolution_mm: 0.5
+# (remove this block) for physically trustworthy results / the real transducer.
+grid:
+  resolution_mm: 1.0
